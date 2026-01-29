@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GSM - Dashboard Produção Profissional (Firebase)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap');
+        :root { --gsm-blue: #0A1D37; --gsm-accent: #1E3A8A; --success: #10B981; --border: #E2E8F0; }
+        * { box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
+        @page { size: A4 landscape; margin: 10mm; }
+        body { background-color: #F1F5F9; margin: 0; display: flex; font-size: 8.5pt; color: #334155; }
+        
+        .sidebar { width: 220px; height: 100vh; background: var(--gsm-blue); padding: 20px; position: fixed; color: white; z-index: 1000; overflow-y: auto; }
+        .sidebar h2 { font-size: 11pt; text-align: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
+        .status-badge { font-size: 7pt; background: rgba(255,255,255,0.1); padding: 5px; border-radius: 4px; margin-bottom: 15px; text-align: center; font-weight: 600; }
+        
+        .main-content { margin-left: 220px; padding: 15px; width: calc(100% - 220px); display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 277mm; background: white; padding: 15px; border-radius: 2px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        
+        header { display: grid; grid-template-columns: 160px 1fr 160px; align-items: center; border: 2px solid var(--gsm-blue); margin-bottom: 15px; height: 70px; }
+        .logo-area { height: 100%; display: flex; align-items: center; justify-content: center; border-right: 2px solid var(--gsm-blue); cursor: pointer; background: #fff; min-width: 160px; }
+        .logo-area img { max-width: 90%; max-height: 90%; object-fit: contain; }
+        
+        .company-info { text-align: center; }
+        .company-info h1 { margin: 0; font-size: 14pt; color: var(--gsm-blue); font-weight: 800; text-transform: uppercase; }
+        .company-info .subtitle { font-size: 10pt; color: var(--gsm-accent); font-weight: 600; letter-spacing: 1px; }
+
+        .master-dash { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .kpi-group { border: 1px solid var(--border); background: #f8fafc; padding: 10px; border-top: 3px solid var(--gsm-accent); }
+        .kpi-group-title { font-size: 7pt; font-weight: 800; color: var(--gsm-blue); text-transform: uppercase; margin-bottom: 8px; display: block; border-bottom: 1px solid #eee; }
+        .kpi-row { display: flex; justify-content: space-between; text-align: center; }
+        .kpi-label { font-size: 6pt; color: #64748B; text-transform: uppercase; font-weight: 700; display: block; }
+        .kpi-value { font-size: 11pt; font-weight: 800; color: var(--gsm-blue); }
+
+        .map-container { margin-bottom: 15px; border: 1px solid var(--border); padding: 8px; background: #fff; }
+        .map-title { font-size: 7pt; font-weight: 800; color: var(--gsm-blue); text-transform: uppercase; display: block; }
+        .map-placeholder { width: 100%; min-height: 220px; background: #f8fafc; border: 2px dashed #cbd5e1; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; position: relative; margin-top: 5px; }
+        .map-placeholder img { max-width: 100%; max-height: 400px; object-fit: contain; }
+
+        .block-header { background: var(--gsm-blue); color: white; padding: 6px 15px; display: flex; align-items: center; gap: 20px; margin-top: 12px; }
+        .bar-bg { background: rgba(255,255,255,0.2); height: 8px; flex-grow: 1; border-radius: 4px; overflow: hidden; }
+        .bar-fill { background: var(--success); height: 100%; width: 0%; transition: width 0.5s; }
+        
+        table { width: 100%; border-collapse: collapse; border: 1px solid var(--border); table-layout: fixed; }
+        th { background: #F1F5F9; color: var(--gsm-blue); font-size: 7pt; padding: 6px 2px; border: 1px solid var(--border); text-transform: uppercase; font-weight: 800; }
+        td { border: 1px solid var(--border); height: 30px; text-align: center; }
+        
+        input { width: 100%; height: 100%; border: none; text-align: center; font-size: 8.5pt; background: transparent; }
+        .obs-input { text-align: left; padding-left: 5px; font-style: italic; font-size: 7.5pt; }
+        .readonly { background: #F8FAFC; font-weight: 800; color: var(--gsm-accent); }
+        .plan-sync { background: #fffbeb !important; color: #b45309 !important; }
+
+        .btn { width: 100%; padding: 10px; border: none; color: white; font-weight: 600; cursor: pointer; margin-bottom: 8px; font-size: 8pt; border-radius: 4px; text-transform: uppercase; transition: opacity 0.2s; }
+        .btn:hover { opacity: 0.9; }
+        .btn-mini { padding: 3px 10px; font-size: 7pt; background: var(--gsm-blue); color: white; border: none; cursor: pointer; border-radius: 2px; font-weight: 800; }
+        .loop-controls { background: #FFF; padding: 5px 15px; border: 1px solid var(--border); border-top: none; text-align: right; margin-bottom: 15px; }
+
+        @media print { 
+            .sidebar, .no-print, .loop-controls { display: none !important; } 
+            .main-content { margin-left: 0; width: 100%; padding: 0; } 
+            .container { box-shadow: none; width: 100%; max-width: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar no-print">
+        <h2>GSM SYSTEM</h2>
+        <div id="db-status" class="status-badge">Conectando...</div>
+        
+        <button class="btn" style="background:var(--success)" onclick="addRowStd('bodyPicada', 'pic')">➕ LINHA PICADA</button>
+        <button class="btn" style="background:var(--success)" onclick="addRowStd('bodyAquisicao', 'aq')">➕ LINHA AQUISIÇÃO</button>
+        <button class="btn" style="background:var(--gsm-accent)" onclick="addNewLoopBlock()">💠 NOVO LOOP</button>
+        
+        <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:15px 0;">
+        
+        <button class="btn" style="background:#0ea5e9" onclick="exportData()">💾 EXPORTAR JSON</button>
+        <button class="btn" style="background:#64748B" onclick="clearMap()">🗺️ LIMPAR MAPA</button>
+        <button class="btn" style="background:#ef4444" onclick="clearAllData()">🗑️ RESETAR TUDO</button>
+        <button class="btn" style="background:#475569; margin-top:20px" onclick="window.print()">🖨️ IMPRIMIR PDF</button>
+    </div>
+
+    <div class="main-content">
+        <div class="container">
+            <header>
+                <div class="logo-area" onclick="document.getElementById('inLog').click()">
+                    <input type="file" id="inLog" style="display:none" onchange="loadL(event)">
+                    <img id="outL" style="display:none">
+                    <small id="txtL" style="font-weight:800; color:#94a3b8">LOGOTIPO</small>
+                </div>
+                <div class="company-info">
+                    <h1>GSM CONSULTORIA EM GEOCIÊNCIAS</h1>
+                    <div class="subtitle">RELATÓRIO DE PRODUÇÃO DIÁRIA</div>
+                </div>
+                <div style="background:var(--gsm-blue); color:white; height:100%; padding:10px; font-size:7.5pt; text-align:center; font-weight:800">
+                    DOC: PRD-26<br>REV: 38
+                </div>
+            </header>
+
+            <div class="master-dash">
+                <div class="kpi-group">
+                    <span class="kpi-group-title">Resumo Picada</span>
+                    <div class="kpi-row">
+                        <div><span class="kpi-label">Plan.</span><div class="kpi-value" id="k_p_plan">0</div></div>
+                        <div><span class="kpi-label">Exec.</span><div class="kpi-value" id="k_p_exec">0</div></div>
+                        <div><span class="kpi-label">%</span><div class="kpi-value" id="k_p_pct" style="color:var(--success)">0%</div></div>
+                    </div>
+                </div>
+                <div class="kpi-group">
+                    <span class="kpi-group-title">Resumo Aquisição</span>
+                    <div class="kpi-row">
+                        <div><span class="kpi-label">Plan.</span><div class="kpi-value" id="k_a_plan">0</div></div>
+                        <div><span class="kpi-label">Exec.</span><div class="kpi-value" id="k_a_exec">0</div></div>
+                        <div><span class="kpi-label">%</span><div class="kpi-value" id="k_a_pct" style="color:var(--success)">0%</div></div>
+                    </div>
+                </div>
+                <div class="kpi-group">
+                    <span class="kpi-group-title">Resumo Loops</span>
+                    <div class="kpi-row">
+                        <div><span class="kpi-label">Plan.</span><div class="kpi-value" id="k_l_plan">0</div></div>
+                        <div><span class="kpi-label">Exec.</span><div class="kpi-value" id="k_l_exec">0</div></div>
+                        <div><span class="kpi-label">%</span><div class="kpi-value" id="k_l_pct" style="color:var(--success)">0%</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="map-container">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 5px;">
+                    <span class="map-title">Mapa de Localização / Progresso de Campo</span>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <label style="font-size: 7pt; font-weight: 800; color: var(--gsm-blue);">DATA DA SITUAÇÃO:</label>
+                        <input type="date" id="mapDate" style="width: 120px; border: 1px solid var(--border); height: 22px; font-size: 8pt;" oninput="saveToFirebase()">
+                    </div>
+                </div>
+                
+                <div class="map-placeholder" onclick="document.getElementById('inMap').click()">
+                    <input type="file" id="inMap" style="display:none" accept="image/*" onchange="loadMap(event)">
+                    <img id="outMap" style="display:none">
+                    <div id="mapTxt" style="text-align:center">
+                        <span style="font-size: 24pt;">🗺️</span><br>
+                        <small style="color: #64748B; font-weight:600">Clique para carregar imagem do mapa</small>
+                    </div>
+                </div>
+                <input type="text" id="mapDesc" placeholder="Breve nota sobre o progresso visual acima..." 
+                        style="width: 100%; margin-top: 5px; font-size: 8.5pt; text-align: left; padding: 5px; border-bottom: 1px solid #eee; font-style: italic;"
+                        oninput="saveToFirebase()">
+            </div>
+
+            <div class="block-header">
+                <span style="font-size:7pt; font-weight:800; min-width:110px">PROG. PICADA</span>
+                <div class="bar-bg"><div class="bar-fill" id="bar_pic"></div></div>
+                <span id="pct_pic" style="font-weight:800; width:40px">0%</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:10%">Data</th>
+                        <th style="width:10%">Alvo</th>
+                        <th style="width:10%">Linha</th>
+                        <th style="width:8%">De</th>
+                        <th style="width:8%">Até</th>
+                        <th style="width:10%">Plan.</th>
+                        <th style="width:10%">Exec.</th>
+                        <th style="width:5%">%</th>
+                        <th>Observações</th>
+                    </tr>
+                </thead>
+                <tbody id="bodyPicada"></tbody>
+            </table>
+            <div class="loop-controls no-print"><button class="btn-mini" onclick="addRowStd('bodyPicada', 'pic')">➕ LINHA</button></div>
+
+            <div class="block-header">
+                <span style="font-size:7pt; font-weight:800; min-width:110px">PROG. AQUISIÇÃO</span>
+                <div class="bar-bg"><div class="bar-fill" id="bar_aq"></div></div>
+                <span id="pct_aq" style="font-weight:800; width:40px">0%</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:10%">Data</th>
+                        <th style="width:10%">Alvo</th>
+                        <th style="width:10%">Linha</th>
+                        <th style="width:8%">De</th>
+                        <th style="width:8%">Até</th>
+                        <th style="width:10%">Plan. (Sinc)</th>
+                        <th style="width:10%">Exec.</th>
+                        <th style="width:5%">%</th>
+                        <th>Observações</th>
+                    </tr>
+                </thead>
+                <tbody id="bodyAquisicao"></tbody>
+            </table>
+            <div class="loop-controls no-print"><button class="btn-mini" onclick="addRowStd('bodyAquisicao', 'aq')">➕ LINHA</button></div>
+
+            <div id="loopsWrapper"></div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+    <script>
+        // --- LOGIN ---
+        (function() {
+            const SENHA_CORRETA = "1234";
+            if (sessionStorage.getItem("gsm_auth") !== "true") {
+                const promptSenha = prompt("Digite a senha de acesso:");
+                if (promptSenha === SENHA_CORRETA) { sessionStorage.setItem("gsm_auth", "true"); }
+                else { alert("Acesso negado."); window.location.reload(); throw new Error("Acesso negado"); }
+            }
+        })();
+
+        // --- FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyC9voukHIX_Da9A-ZRH994mp1ZFiTxoC8M",
+            authDomain: "sistemagsm.firebaseapp.com",
+            databaseURL: "https://sistemagsm-default-rtdb.firebaseio.com",
+            projectId: "sistemagsm",
+            storageBucket: "sistemagsm.firebasestorage.app",
+            messagingSenderId: "27185156208",
+            appId: "1:27185156208:web:ab96087d7d756e5cdfa4b5"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        let loopCounter = 0;
+
+        const getToday = () => new Date().toISOString().split('T')[0];
+
+        // --- PERSISTÊNCIA CORRIGIDA ---
+        function saveToFirebase() {
+            const data = {
+                pic: getTableData('bodyPicada'),
+                aq: getTableData('bodyAquisicao'),
+                loops: Array.from(document.querySelectorAll('[id^="group_loop_"]')).map(el => {
+                    const id = el.id.replace('group_loop_', '');
+                    return { 
+                        id: id, 
+                        p: document.getElementById(`p_loop_${id}`)?.value || 0, 
+                        rows: getTableData(`tbody_loop_${id}`) 
+                    };
+                }),
+                logo: document.getElementById('outL').src || "",
+                map: document.getElementById('outMap').style.display === 'none' ? "" : document.getElementById('outMap').src,
+                mapDate: document.getElementById('mapDate').value,
+                mapDesc: document.getElementById('mapDesc').value
+            };
+            db.ref('producao_atual').set(data).then(() => {
+                const s = document.getElementById('db-status');
+                s.innerText = "✅ Sincronizado"; s.style.color = "#10B981";
+            });
+        }
+
+        function getTableData(id) {
+            const b = document.getElementById(id); if(!b) return [];
+            return Array.from(b.rows).map(r => Array.from(r.querySelectorAll('input')).map(i => i.value));
+        }
+
+        function syncAll() {
+            const picPlanVal = document.getElementById('pic-plan')?.value || 0;
+            const aqPlanInput = document.getElementById('aq-plan');
+            if (aqPlanInput) aqPlanInput.value = picPlanVal;
+            calcStd('pic'); calcStd('aq'); updateMaster(); saveToFirebase();
+        }
+
+        function calcStd(prefix) {
+            let total = 0;
+            const des = document.querySelectorAll(`.${prefix}-de`);
+            const as = document.querySelectorAll(`.${prefix}-a`);
+            des.forEach((el, i) => { 
+                const val = Math.abs((parseFloat(as[i].value) || 0) - (parseFloat(el.value) || 0));
+                total += val;
+            });
+            const plan = parseFloat(document.getElementById(`${prefix}-plan`)?.value) || 0;
+            const pct = plan > 0 ? Math.round((total/plan)*100) : 0;
+            if(document.getElementById(`${prefix}-exec`)) document.getElementById(`${prefix}-exec`).innerText = total;
+            if(document.getElementById(`${prefix}-pct`)) document.getElementById(`${prefix}-pct`).innerText = pct + "%";
+            document.getElementById(`pct_${prefix}`).innerText = pct + "%";
+            document.getElementById(`bar_${prefix}`).style.width = Math.min(pct, 100) + "%";
+        }
+
+        function updateMaster() {
+            const pp = parseFloat(document.getElementById('pic-plan')?.value) || 0;
+            const pe = parseFloat(document.getElementById('pic-exec')?.innerText) || 0;
+            document.getElementById('k_p_plan').innerText = pp + " m";
+            document.getElementById('k_p_exec').innerText = pe + " m";
+            document.getElementById('k_p_pct').innerText = (pp > 0 ? Math.round((pe/pp)*100) : 0) + "%";
+
+            const ap = parseFloat(document.getElementById('aq-plan')?.value) || 0;
+            const ae = parseFloat(document.getElementById('aq-exec')?.innerText) || 0;
+            document.getElementById('k_a_plan').innerText = ap + " m";
+            document.getElementById('k_a_exec').innerText = ae + " m";
+            document.getElementById('k_a_pct').innerText = (ap > 0 ? Math.round((ae/ap)*100) : 0) + "%";
+
+            let lp = 0, le = 0;
+            document.querySelectorAll('[id^="p_loop_"]').forEach(el => lp += parseFloat(el.value) || 0);
+            document.querySelectorAll('.loop-exec-val-internal').forEach(el => le += parseFloat(el.innerText) || 0);
+            document.getElementById('k_l_plan').innerText = lp + " m";
+            document.getElementById('k_l_exec').innerText = le + " m";
+            document.getElementById('k_l_pct').innerText = (lp > 0 ? Math.round((le/lp)*100) : 0) + "%";
+        }
+
+        function addRowStd(tbodyId, prefix, saved = null) {
+            const tbody = document.getElementById(tbodyId);
+            const row = tbody.insertRow();
+            const isFirst = tbody.rows.length === 1;
+            
+            row.innerHTML = `
+                <td><input type="date" value="${saved?.[0] || getToday()}" oninput="saveToFirebase()"></td>
+                <td><input type="text" value="${saved?.[1] || ''}" oninput="saveToFirebase()"></td>
+                <td><input type="text" value="${saved?.[2] || ''}" oninput="saveToFirebase()"></td>
+                <td><input type="number" class="${prefix}-de" oninput="syncAll()" value="${saved?.[3] || ''}"></td>
+                <td><input type="number" class="${prefix}-a" oninput="syncAll()" value="${saved?.[4] || ''}"></td>` +
+                (isFirst ? `<td class="readonly ${prefix==='aq'?'plan-sync':''}" rowspan="1"><input type="number" id="${prefix}-plan" value="${saved?.[5] || '4000'}" oninput="syncAll()" ${prefix==='aq'?'readonly':''}></td><td class="readonly" id="${prefix}-exec" rowspan="1">0</td><td class="readonly" id="${prefix}-pct" rowspan="1">0%</td>` : '') +
+                `<td><input type="text" class="obs-input" value="${saved?.[isFirst ? 8 : 5] || ''}" oninput="saveToFirebase()" placeholder="..."></td>`;
+            
+            updateSpans(tbodyId); 
+            if(!saved) syncAll();
+        }
+
+        function addNewLoopBlock(forcedId = null) {
+            const idV = forcedId || ++loopCounter;
+            const id = `loop_${idV}`;
+            const wrap = document.createElement('div');
+            wrap.id = `group_${id}`;
+            wrap.innerHTML = `
+                <div class="block-header"><span style="font-size:7pt; font-weight:800; min-width:120px">PROG. LOOP L${idV}</span><div class="bar-bg"><div class="bar-fill" id="bar_${id}"></div></div><span id="pc_txt_${id}" style="font-weight:800; width:40px">0%</span></div>
+                <table>
+                    <tbody id="tbody_${id}"><tr style="background:#F1F5F9"><th>Data</th><th>Alvo</th><th>ID Loop</th><th>N</th><th>S</th><th>E</th><th>W</th><th style="width:10%">Planejado</th><th style="width:10%">Executado</th><th style="width:5%">%</th><th>Observações</th></tr>
+                    <tr><td><input type="date" value="${getToday()}" oninput="saveToFirebase()"></td><td><input type="text" oninput="saveToFirebase()"></td><td class="readonly"><input type="text" value="L${idV}" readonly></td><td><input type="number" class="in-${id}" oninput="sumLoop('${id}')"></td><td><input type="number" class="in-${id}" oninput="sumLoop('${id}')"></td><td><input type="number" class="in-${id}" oninput="sumLoop('${id}')"></td><td><input type="number" class="in-${id}" oninput="sumLoop('${id}')"></td><td class="readonly" rowspan="1"><input type="number" id="p_${id}" value="4000" oninput="sumLoop('${id}')"></td><td class="readonly loop-exec-val-internal" id="ex_${id}" rowspan="1">0</td><td class="readonly" id="pc_${id}" rowspan="1">0%</td><td><input type="text" class="obs-input" oninput="saveToFirebase()" placeholder="..."></td></tr></tbody>
+                </table>
+                <div class="loop-controls no-print"><button class="btn-mini" onclick="addRowLoop('${idV}')">➕ LINHA</button><button class="btn-mini" style="background:#ef4444" onclick="removeFullLoop('${idV}')">EXCLUIR BLOCO</button></div>`;
+            document.getElementById('loopsWrapper').appendChild(wrap);
+            if(!forcedId) { sumLoop(id); saveToFirebase(); }
+        }
+
+        function addRowLoop(idV, saved = null) {
+            const id = `loop_${idV}`;
+            const tbody = document.getElementById(`tbody_${id}`);
+            const row = tbody.insertRow();
+            row.innerHTML = `<td><input type="date" value="${saved?.[0] || getToday()}" oninput="saveToFirebase()"></td><td><input type="text" value="${saved?.[1] || ''}" oninput="saveToFirebase()"></td><td></td><td><input type="number" class="in-${id}" oninput="sumLoop('${id}')" value="${saved?.[3] || ''}"></td><td><input type="number" class="in-${id}" oninput="sumLoop('${id}')" value="${saved?.[4] || ''}"></td><td><input type="number" class="in-${id}" oninput="sumLoop('${id}')" value="${saved?.[5] || ''}"></td><td><input type="number" class="in-${id}" oninput="sumLoop('${id}')" value="${saved?.[6] || ''}"></td><td colspan="3"></td><td><input type="text" class="obs-input" oninput="saveToFirebase()" value="${saved?.[10] || ''}" placeholder="..."></td>`;
+            updateLoopSpans(id); if(!saved) sumLoop(id);
+        }
+
+        function sumLoop(id) {
+            let t = 0; document.querySelectorAll(`.in-${id}`).forEach(i => t += (parseFloat(i.value) || 0));
+            const p = parseFloat(document.getElementById(`p_${id}`).value) || 0;
+            const pct = p > 0 ? Math.round((t/p)*100) : 0;
+            document.getElementById(`ex_${id}`).innerText = t;
+            document.getElementById(`pc_${id}`).innerText = pct + "%";
+            document.getElementById(`pc_txt_${id}`).innerText = pct + "%";
+            document.getElementById(`bar_${id}`).style.width = Math.min(pct, 100) + "%";
+            updateMaster(); 
+            saveToFirebase();
+        }
+
+        function updateSpans(id) {
+            const b = document.getElementById(id);
+            if (b?.rows.length > 0) {
+                const n = b.rows.length;
+                b.rows[0].querySelectorAll('.readonly').forEach(c => c.rowSpan = n);
+            }
+        }
+        function updateLoopSpans(id) {
+            const b = document.getElementById(`tbody_${id}`);
+            if (b?.rows.length > 1) {
+                const n = b.rows.length - 1;
+                b.rows[1].querySelectorAll('.readonly').forEach(c => c.rowSpan = n);
+            }
+        }
+
+        function loadL(e) {
+            const r = new FileReader();
+            r.onload = () => {
+                const img = document.getElementById('outL');
+                img.src = r.result;
+                img.style.display = 'block';
+                document.getElementById('txtL').style.display = 'none';
+                saveToFirebase();
+            };
+            r.readAsDataURL(e.target.files[0]);
+        }
+        function loadMap(e) {
+            const r = new FileReader();
+            r.onload = () => {
+                const img = document.getElementById('outMap');
+                img.src = r.result;
+                img.style.display = 'block';
+                document.getElementById('mapTxt').style.display = 'none';
+                saveToFirebase();
+            };
+            r.readAsDataURL(e.target.files[0]);
+        }
+
+        function clearMap() {
+            if(confirm("Remover imagem do mapa?")) {
+                document.getElementById('outMap').src = "";
+                document.getElementById('outMap').style.display = 'none';
+                document.getElementById('mapTxt').style.display = 'block';
+                saveToFirebase();
+            }
+        }
+
+        function clearAllData() {
+            if(confirm("Limpar todos os dados do servidor?")) {
+                db.ref('producao_atual').remove().then(() => location.reload());
+            }
+        }
+
+        function exportData() {
+            db.ref('producao_atual').once('value').then(s => {
+                const blob = new Blob([JSON.stringify(s.val(), null, 2)], {type:'application/json'});
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `GSM_BACKUP.json`;
+                a.click();
+            });
+        }
+
+        function removeFullLoop(idV) {
+            if(confirm("Excluir este bloco de loop?")) {
+                document.getElementById(`group_loop_${idV}`).remove();
+                updateMaster();
+                saveToFirebase();
+            }
+        }
+
+        // --- CARREGAMENTO INICIAL CORRIGIDO ---
+        window.onload = () => {
+            db.ref('producao_atual').once('value').then(s => {
+                if(s.exists()) {
+                    const data = s.val();
+                    if(data.pic) data.pic.forEach(r => addRowStd('bodyPicada', 'pic', r));
+                    if(data.aq) data.aq.forEach(r => addRowStd('bodyAquisicao', 'aq', r));
+                    
+                    if(data.loops) {
+                        data.loops.forEach(l => {
+                            addNewLoopBlock(l.id);
+                            const pInput = document.getElementById(`p_loop_${l.id}`);
+                            if(pInput) pInput.value = l.p;
+                            
+                            const tbody = document.getElementById(`tbody_loop_${l.id}`);
+                            // Limpa a linha padrão
+                            tbody.innerHTML = '<tr style="background:#F1F5F9"><th>Data</th><th>Alvo</th><th>ID Loop</th><th>N</th><th>S</th><th>E</th><th>W</th><th style="width:10%">Planejado</th><th style="width:10%">Executado</th><th style="width:5%">%</th><th>Observações</th></tr>';
+                            
+                            l.rows.forEach(rd => {
+                                addRowLoop(l.id, rd);
+                            });
+                            sumLoop(`loop_${l.id}`);
+                        });
+                        const ids = data.loops.map(l => parseInt(l.id));
+                        loopCounter = Math.max(...ids, 0);
+                    }
+                    
+                    if(data.logo && data.logo !== "") {
+                        const imgL = document.getElementById('outL');
+                        imgL.src = data.logo;
+                        imgL.style.display = 'block';
+                        document.getElementById('txtL').style.display = 'none';
+                    }
+                    if(data.map && data.map !== "") {
+                        const imgM = document.getElementById('outMap');
+                        imgM.src = data.map;
+                        imgM.style.display = 'block';
+                        document.getElementById('mapTxt').style.display = 'none';
+                    }
+                    document.getElementById('mapDate').value = data.mapDate || "";
+                    document.getElementById('mapDesc').value = data.mapDesc || "";
+                    syncAll();
+                } else {
+                    addRowStd('bodyPicada', 'pic');
+                    addRowStd('bodyAquisicao', 'aq');
+                    addNewLoopBlock();
+                }
+                document.getElementById('db-status').innerText = "✅ Conectado";
+            });
+        };
+    </script>
+</body>
+</html>
