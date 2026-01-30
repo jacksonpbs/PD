@@ -3,122 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GSM - Dashboard Produção (Versão Estável)</title>
+    <title>GSM - Dashboard Produção Oficial</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap');
-        :root { --gsm-blue: #0A1D37; --gsm-accent: #1E3A8A; --success: #10B981; --border: #E2E8F0; }
+                        
+        :root { 
+            --gsm-deep: #1a1c3e;
+            --gsm-mid: #41517f;
+            --gsm-cyan: #3ea6d5;
+            --gsm-text-bg: #f8fafc;
+            --success: #10B981; 
+            --border: #cbd5e1;
+        }
+
         * { box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
-        @page { size: A4 landscape; margin: 10mm; }
-        body { background-color: #F1F5F9; margin: 0; display: flex; font-size: 8.5pt; color: #334155; }
-        .sidebar { width: 220px; height: 100vh; background: var(--gsm-blue); padding: 20px; position: fixed; color: white; z-index: 1000; overflow-y: auto; }
-        .sidebar h2 { font-size: 11pt; text-align: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
-        .status-badge { font-size: 7pt; background: rgba(255,255,255,0.1); padding: 5px; border-radius: 4px; margin-bottom: 15px; text-align: center; font-weight: 600; }
+        
+        @page { size: A4 landscape; margin: 0; }
+
+        body { background-color: #e2e8f0; margin: 0; display: flex; font-size: 8.5pt; color: #1e293b; }
+        
+        /* Sidebar */
+        .sidebar { width: 220px; height: 100vh; background: var(--gsm-deep); padding: 20px; position: fixed; color: white; z-index: 1000; overflow-y: auto; border-right: 4px solid var(--gsm-cyan); }
+        .sidebar h2 { font-size: 11pt; text-align: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; color: var(--gsm-cyan); }
+        
         .main-content { margin-left: 220px; padding: 15px; width: calc(100% - 220px); display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 277mm; background: white; padding: 15px; border-radius: 2px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        header { display: grid; grid-template-columns: 160px 1fr 160px; align-items: center; border: 2px solid var(--gsm-blue); margin-bottom: 15px; height: 70px; }
-        .logo-area { height: 100%; display: flex; align-items: center; justify-content: center; border-right: 2px solid var(--gsm-blue); cursor: pointer; background: #fff; }
-        .logo-area img { max-width: 90%; max-height: 90%; object-fit: contain; }
+        .container { width: 100%; max-width: 277mm; background: white; padding: 20px; border-radius: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        
+        /* Header */
+        header { display: grid; grid-template-columns: 180px 1fr 140px; align-items: center; border: 2px solid var(--gsm-deep); margin-bottom: 15px; height: 90px; }
+        .logo-area { height: 100%; display: flex; align-items: center; justify-content: center; border-right: 2px solid var(--gsm-deep); cursor: pointer; background: #fff; padding: 10px; }
+        .logo-area img { max-width: 100%; max-height: 100%; object-fit: contain; }
         .company-info { text-align: center; }
-        .company-info h1 { margin: 0; font-size: 14pt; color: var(--gsm-blue); font-weight: 800; text-transform: uppercase; }
-        .company-info .subtitle { font-size: 10pt; color: var(--gsm-accent); font-weight: 600; }
+        .company-info h1 { margin: 0; font-size: 15pt; color: var(--gsm-deep); font-weight: 800; text-transform: uppercase; }
+        .company-info .subtitle { font-size: 10pt; color: var(--gsm-mid); font-weight: 600; letter-spacing: 2px; }
+        .doc-info { background: var(--gsm-deep); color: white; height: 100%; padding: 10px; font-size: 7.5pt; text-align: center; font-weight: 800; display: flex; flex-direction: column; justify-content: center; }
+
+        /* Metadados */
+        .metadata-bar { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .meta-item { background: var(--gsm-text-bg); border: 1px solid var(--border); padding: 8px 12px; border-top: 3px solid var(--gsm-deep); }
+        .meta-item label { font-size: 6pt; font-weight: 800; color: var(--gsm-mid); text-transform: uppercase; display: block; }
+        .meta-item input { font-weight: 700; color: var(--gsm-deep); height: 20px; font-size: 9pt; border: none; outline: none; width: 100%; background: transparent; }
+
+        /* Dashboard KPIs */
         .master-dash { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .kpi-group { border: 1px solid var(--border); background: #f8fafc; padding: 10px; border-top: 3px solid var(--gsm-accent); }
-        .kpi-group-title { font-size: 7pt; font-weight: 800; color: var(--gsm-blue); text-transform: uppercase; margin-bottom: 8px; display: block; }
+        .kpi-group { border: 1px solid var(--border); background: #fff; padding: 10px; border-radius: 4px; border-left: 6px solid var(--gsm-deep); }
+        .kpi-group-title { font-size: 7.5pt; font-weight: 800; color: var(--gsm-deep); text-transform: uppercase; margin-bottom: 5px; border-bottom: 1px solid #f1f5f9; }
         .kpi-row { display: flex; justify-content: space-between; text-align: center; }
-        .kpi-label { font-size: 6pt; color: #64748B; font-weight: 700; display: block; }
-        .kpi-value { font-size: 11pt; font-weight: 800; color: var(--gsm-blue); }
-        .map-container { margin-bottom: 15px; border: 1px solid var(--border); padding: 8px; background: #fff; }
-        .map-placeholder { width: 100%; min-height: 220px; background: #f8fafc; border: 2px dashed #cbd5e1; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; margin-top: 5px; }
-        .map-placeholder img { max-width: 100%; max-height: 400px; object-fit: contain; }
-        .block-header { background: var(--gsm-blue); color: white; padding: 6px 15px; display: flex; align-items: center; gap: 20px; margin-top: 12px; }
-        .bar-bg { background: rgba(255,255,255,0.2); height: 8px; flex-grow: 1; border-radius: 4px; overflow: hidden; }
+        .kpi-label { font-size: 5.5pt; color: #94a3b8; text-transform: uppercase; font-weight: 700; }
+        .kpi-value { font-size: 12pt; font-weight: 800; color: var(--gsm-deep); }
+
+        /* Mapa */
+        .map-container { margin-bottom: 15px; border: 1px solid var(--border); padding: 10px; background: #fff; }
+        .map-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .map-title { font-size: 7.5pt; font-weight: 800; color: var(--gsm-deep); text-transform: uppercase; }
+        .map-placeholder { width: 100%; background: var(--gsm-text-bg); border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; min-height: 50px; overflow: hidden; }
+        .map-placeholder img { width: 100%; height: auto; max-height: 400px; object-fit: contain; }
+
+        /* Tabelas */
+        .block-header { color: white; padding: 6px 12px; display: flex; align-items: center; gap: 15px; border-radius: 4px 4px 0 0; }
+        .header-pic { background: var(--gsm-deep); }
+        .header-aq { background: var(--gsm-mid); }
+        .header-loop { background: var(--gsm-cyan); }
+        .bar-bg { background: rgba(255,255,255,0.3); height: 8px; flex-grow: 1; border-radius: 4px; overflow: hidden; }
         .bar-fill { background: var(--success); height: 100%; width: 0%; transition: width 0.5s; }
-        table { width: 100%; border-collapse: collapse; border: 1px solid var(--border); table-layout: fixed; }
-        th { background: #F1F5F9; color: var(--gsm-blue); font-size: 7pt; padding: 6px 2px; border: 1px solid var(--border); text-transform: uppercase; }
-        td { border: 1px solid var(--border); height: 30px; text-align: center; }
-        input { width: 100%; height: 100%; border: none; text-align: center; font-size: 8.5pt; background: transparent; }
-        .readonly { background: #F8FAFC; font-weight: 800; color: var(--gsm-accent); }
-        .btn { width: 100%; padding: 10px; border: none; color: white; font-weight: 600; cursor: pointer; margin-bottom: 8px; border-radius: 4px; }
-        .btn-mini { padding: 3px 10px; font-size: 7pt; background: var(--gsm-blue); color: white; border: none; cursor: pointer; border-radius: 2px; }
-        @media print { .sidebar, .no-print, .loop-controls { display: none !important; } .main-content { margin-left: 0; width: 100%; } }
+        
+        table { width: 100%; border-collapse: collapse; border: 1px solid var(--border); table-layout: fixed; margin-bottom: 10px; }
+        th { background: #f1f5f9; color: var(--gsm-deep); font-size: 6.5pt; padding: 6px 2px; border: 1px solid var(--border); text-transform: uppercase; font-weight: 800; }
+        td { border: 1px solid var(--border); height: 28px; text-align: center; background: #fff; }
+        input { width: 100%; height: 100%; border: none; text-align: center; font-size: 8.5pt; background: transparent; outline: none; font-weight: 600; }
+        .readonly { background: #f8fafc; font-weight: 800; color: var(--gsm-deep); }
+
+        /* Botões */
+        .btn { width: 100%; padding: 12px; border: none; color: white; font-weight: 700; cursor: pointer; margin-bottom: 10px; font-size: 8pt; border-radius: 6px; text-transform: uppercase; }
+        .btn-mini { padding: 4px 10px; font-size: 7pt; background: var(--gsm-deep); color: white; border: none; cursor: pointer; border-radius: 4px; font-weight: 800; }
+        .no-print { display: block; }
+
+        #status-cloud { font-size: 7pt; margin-top: 10px; text-align: center; color: #10B981; font-weight: 600; }
+
+        /* Modal */
+        #mapModal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); justify-content: center; align-items: center; }
+        #mapModal img { max-width: 95%; max-height: 95%; }
+
+        @media print {
+            body { background: white !important; margin: 0 !important; padding: 0 !important; display: block !important; }
+            .sidebar, .no-print, .col-del, #mapModal, .loop-controls { display: none !important; }
+            .main-content { margin: 0 !important; padding: 0 !important; width: 100% !important; display: block !important; }
+            .container { max-width: 100% !important; width: 100% !important; margin: 0 !important; padding: 10mm !important; border: none !important; box-shadow: none !important; }
+            .block-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            table, .map-container, header { page-break-inside: avoid; }
+        }
     </style>
 </head>
 <body>
+    <div id="mapModal" onclick="this.style.display='none'"><img id="imgModal"></div>
+    
     <div class="sidebar no-print">
         <h2>GSM SYSTEM</h2>
-        <div id="db-status" class="status-badge">Conectando...</div>
-        <button class="btn" style="background:var(--success)" onclick="addRowStd('bodyPicada', 'pic')">➕ LINHA PICADA</button>
-        <button class="btn" style="background:var(--success)" onclick="addRowStd('bodyAquisicao', 'aq')">➕ LINHA AQUISIÇÃO</button>
-        <button class="btn" style="background:var(--gsm-accent)" onclick="addNewLoopBlock()">💠 NOVO LOOP</button>
-        <button class="btn" style="background:#0ea5e9" onclick="exportData()">💾 EXPORTAR JSON</button>
-        <button class="btn" style="background:#ef4444" onclick="clearAllData()">🗑️ RESETAR TUDO</button>
-        <button class="btn" style="background:#475569" onclick="window.print()">🖨️ PDF</button>
+        <button class="btn" style="background:var(--gsm-deep)" onclick="addRowStd('bodyPicada', 'pic')">➕ LINHA PICADA</button>
+        <button class="btn" style="background:var(--gsm-mid)" onclick="addRowStd('bodyAquisicao', 'aq')">➕ LINHA AQUISIÇÃO</button>
+        <button class="btn" style="background:var(--gsm-cyan)" onclick="addNewLoopBlock()">💠 NOVO BLOCO LOOP</button>
+        <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:20px 0;">
+        
+        <button class="btn" style="background:#0ea5e9" onclick="forceSave()">☁️ SALVAR NA NUVEM</button>
+        <div id="status-cloud">Conectando...</div>
+
+        <button class="btn" style="background:#ef4444; margin-top:20px" onclick="clearAllData()">🗑️ RESETAR TUDO</button>
+        <button class="btn" style="background:#475569" onclick="window.print()">🖨️ GERAR RELATÓRIO PDF</button>
     </div>
 
     <div class="main-content">
         <div class="container">
             <header>
                 <div class="logo-area" onclick="document.getElementById('inLog').click()">
-                    <input type="file" id="inLog" style="display:none" onchange="loadFile(event, 'outL', 'txtL')">
+                    <input type="file" id="inLog" style="display:none" accept="image/*" onchange="processImage(event, 'outL', 'txtL', 800, true)">
                     <img id="outL" style="display:none">
-                    <small id="txtL">LOGOTIPO</small>
+                    <div id="txtL"><small>LOGO</small></div>
                 </div>
                 <div class="company-info">
                     <h1>GSM CONSULTORIA EM GEOCIÊNCIAS</h1>
                     <div class="subtitle">RELATÓRIO DE PRODUÇÃO DIÁRIA</div>
                 </div>
-                <div style="background:var(--gsm-blue); color:white; padding:10px; font-size:7.5pt; text-align:center;">DOC: PRD-26<br>REV: 38</div>
+                <div class="doc-info">DOC: PRD-26<br>REV: 38<br>2026</div>
             </header>
 
+            <div class="metadata-bar">
+                <div class="meta-item"><label>Cliente</label><input type="text" id="info_empresa" oninput="saveAllData()"></div>
+                <div class="meta-item"><label>Projeto</label><input type="text" id="info_local" oninput="saveAllData()"></div>
+                <div class="meta-item"><label>Método</label><input type="text" id="info_metodo" oninput="saveAllData()"></div>
+            </div>
+
             <div class="master-dash">
-                <div class="kpi-group">
-                    <span class="kpi-group-title">Resumo Picada</span>
-                    <div class="kpi-row">
-                        <div><span class="kpi-label">Plan.</span><div class="kpi-value" id="k_p_plan">0</div></div>
-                        <div><span class="kpi-label">Exec.</span><div class="kpi-value" id="k_p_exec">0</div></div>
-                    </div>
-                </div>
-                <div class="kpi-group">
-                    <span class="kpi-group-title">Resumo Aquisição</span>
-                    <div class="kpi-row">
-                        <div><span class="kpi-label">Plan.</span><div class="kpi-value" id="k_a_plan">0</div></div>
-                        <div><span class="kpi-label">Exec.</span><div class="kpi-value" id="k_a_exec">0</div></div>
-                    </div>
-                </div>
-                <div class="kpi-group">
-                    <span class="kpi-group-title">Resumo Loops</span>
-                    <div class="kpi-row">
-                        <div><span class="kpi-label">Plan.</span><div class="kpi-value" id="k_l_plan">0</div></div>
-                        <div><span class="kpi-label">Exec.</span><div class="kpi-value" id="k_l_exec">0</div></div>
-                    </div>
-                </div>
+                <div class="kpi-group"><span class="kpi-group-title">Picada</span><div class="kpi-row"><div><span class="kpi-label">P</span><div class="kpi-value" id="k_p_plan">0</div></div><div><span class="kpi-label">E</span><div class="kpi-value" id="k_p_exec">0</div></div><div><span class="kpi-label">%</span><div class="kpi-value" id="k_p_pct">0%</div></div></div></div>
+                <div class="kpi-group" style="border-left-color: var(--gsm-mid)"><span class="kpi-group-title">Aquisição</span><div class="kpi-row"><div><span class="kpi-label">P</span><div class="kpi-value" id="k_a_plan">0</div></div><div><span class="kpi-label">E</span><div class="kpi-value" id="k_a_exec">0</div></div><div><span class="kpi-label">%</span><div class="kpi-value" id="k_a_pct">0%</div></div></div></div>
+                <div class="kpi-group" style="border-left-color: var(--gsm-cyan)"><span class="kpi-group-title">Loops</span><div class="kpi-row"><div><span class="kpi-label">P</span><div class="kpi-value" id="k_l_plan">0</div></div><div><span class="kpi-label">E</span><div class="kpi-value" id="k_l_exec">0</div></div><div><span class="kpi-label">%</span><div class="kpi-value" id="k_l_pct">0%</div></div></div></div>
             </div>
 
             <div class="map-container">
-                <div class="map-placeholder" onclick="document.getElementById('inMap').click()">
-                    <input type="file" id="inMap" style="display:none" onchange="loadFile(event, 'outMap', 'mapTxt')">
-                    <img id="outMap" style="display:none">
-                    <div id="mapTxt">Clique para carregar o mapa</div>
+                <div class="map-header">
+                    <span class="map-title">MAPA DE LOCALIZAÇÃO / PROGRESSO</span>
+                    <div>
+                        <input type="date" id="map_date" style="padding:2px; border:1px solid var(--border)" oninput="saveAllData()">
+                        <button class="btn-mini no-print" onclick="document.getElementById('inMap').click()">CARREGAR</button>
+                    </div>
                 </div>
-                <input type="date" id="mapDate" oninput="saveToFirebase()" style="width:200px; margin-top:5px; border:1px solid #eee">
-                <input type="text" id="mapDesc" placeholder="Descrição do progresso..." oninput="saveToFirebase()" style="width:100%; border-bottom:1px solid #eee; text-align:left">
+                <div class="map-placeholder">
+                    <input type="file" id="inMap" style="display:none" accept="image/*" onchange="processImage(event, 'outMap', 'mapTxt', 1600, false)">
+                    <img id="outMap" style="display:none" onclick="openMapZoom()">
+                    <div id="mapTxt" class="no-print"><small>Clique para carregar o mapa</small></div>
+                </div>
             </div>
 
-            <div class="block-header"><span>PICADA</span><div class="bar-bg"><div class="bar-fill" id="bar_pic"></div></div><span id="pct_pic">0%</span></div>
-            <table><thead><tr><th>Data</th><th>Alvo</th><th>Linha</th><th>De</th><th>Até</th><th>Plan.</th><th>Exec.</th><th>%</th><th>OBS</th></tr></thead><tbody id="bodyPicada"></tbody></table>
+            <div class="block-header header-pic">
+                <span style="font-weight:800; min-width:100px">PROG. PICADA</span>
+                <div class="bar-bg"><div class="bar-fill" id="bar_pic"></div></div>
+                <span id="pct_pic">0%</span>
+            </div>
+            <table>
+                <thead><tr><th class="no-print col-del"></th><th>Data</th><th>Alvo</th><th>Linha</th><th>De</th><th>Até</th><th>Obs</th><th>Plan.</th><th>Exec.</th><th>%</th></tr></thead>
+                <tbody id="bodyPicada"></tbody>
+            </table>
 
-            <div class="block-header"><span>AQUISIÇÃO</span><div class="bar-bg"><div class="bar-fill" id="bar_aq"></div></div><span id="pct_aq">0%</span></div>
-            <table><thead><tr><th>Data</th><th>Alvo</th><th>Linha</th><th>De</th><th>Até</th><th>Plan.</th><th>Exec.</th><th>%</th><th>OBS</th></tr></thead><tbody id="bodyAquisicao"></tbody></table>
+            <div class="block-header header-aq">
+                <span style="font-weight:800; min-width:100px">PROG. AQUISIÇÃO</span>
+                <div class="bar-bg"><div class="bar-fill" id="bar_aq"></div></div>
+                <span id="pct_aq">0%</span>
+            </div>
+            <table>
+                <thead><tr><th class="no-print col-del"></th><th>Data</th><th>Alvo</th><th>Linha</th><th>De</th><th>Até</th><th>Obs</th><th>Plan.</th><th>Exec.</th><th>%</th></tr></thead>
+                <tbody id="bodyAquisicao"></tbody>
+            </table>
 
             <div id="loopsWrapper"></div>
         </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, get, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-    <script>
-        // --- CONFIGURAÇÃO FIREBASE ---
+        // CONFIGURAÇÃO FORNECIDA PELO USUÁRIO
         const firebaseConfig = {
             apiKey: "AIzaSyC9voukHIX_Da9A-ZRH994mp1ZFiTxoC8M",
             authDomain: "sistemagsm.firebaseapp.com",
@@ -126,204 +190,226 @@
             projectId: "sistemagsm",
             storageBucket: "sistemagsm.firebasestorage.app",
             messagingSenderId: "27185156208",
-            appId: "1:27185156208:web:ab96087d7d756e5cdfa4b5"
+            appId: "1:27185156208:web:ab96087d7d756e5cdfa4b5",
+            measurementId: "G-1RMP1NDLG8"
         };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        let loopCounter = 0;
 
-        // --- SALVAMENTO ---
-        function saveToFirebase() {
-            try {
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const auth = getAuth(app);
+
+        let timeoutSave;
+
+        window.saveAllData = function() {
+            clearTimeout(timeoutSave);
+            const statusEl = document.getElementById('status-cloud');
+            statusEl.innerText = "Editando...";
+            statusEl.style.color = "#f59e0b";
+
+            timeoutSave = setTimeout(async () => {
                 const data = {
+                    emp: document.getElementById('info_empresa').value,
+                    loc: document.getElementById('info_local').value,
+                    met: document.getElementById('info_metodo').value,
+                    mapDate: document.getElementById('map_date').value,
                     pic: getTableData('bodyPicada'),
                     aq: getTableData('bodyAquisicao'),
-                    loops: Array.from(document.querySelectorAll('[id^="group_loop_"]')).map(el => {
-                        const id = el.id.replace('group_loop_', '');
-                        return {
-                            id: id,
-                            p: document.getElementById(`p_loop_${id}`)?.value || 0,
-                            rows: getTableData(`tbody_loop_${id}`)
-                        };
+                    loops: Array.from(document.querySelectorAll('.loop-block-main')).map(el => {
+                        const id = el.id.replace('group_', '');
+                        return { id, p: document.getElementById(`p_${id}`)?.value || '4000', rows: getTableData(`tbody_${id}`, true) };
                     }),
-                    logo: document.getElementById('outL').src.startsWith('data') ? document.getElementById('outL').src : "",
-                    map: document.getElementById('outMap').src.startsWith('data') ? document.getElementById('outMap').src : "",
-                    mapDate: document.getElementById('mapDate').value,
-                    mapDesc: document.getElementById('mapDesc').value
+                    logo: document.getElementById('outL').src,
+                    map: document.getElementById('outMap').src,
+                    ts: new Date().getTime()
                 };
 
-                db.ref('producao_atual').set(data).then(() => {
-                    document.getElementById('db-status').innerText = "✅ Sincronizado";
-                    document.getElementById('db-status').style.color = "#10B981";
-                });
-            } catch (e) { console.error("Erro ao salvar:", e); }
+                try {
+                    await set(ref(db, 'producao_atual'), data);
+                    statusEl.innerText = "☁️ Sincronizado";
+                    statusEl.style.color = "#10B981";
+                    updateMaster();
+                } catch (e) {
+                    statusEl.innerText = "❌ Erro ao salvar";
+                    statusEl.style.color = "#ef4444";
+                }
+            }, 1500);
+        };
+
+        window.forceSave = () => window.saveAllData();
+
+        window.clearAllData = async function() {
+            if(confirm("Deseja apagar todos os dados da nuvem?")) {
+                await remove(ref(db, 'producao_atual'));
+                location.reload();
+            }
+        };
+
+        window.addEventListener('load', async () => {
+            try {
+                await signInAnonymously(auth);
+                document.getElementById('status-cloud').innerText = "Conectado";
+                
+                const snapshot = await get(ref(db, 'producao_atual'));
+                if (snapshot.exists()) {
+                    const d = snapshot.val();
+                    document.getElementById('info_empresa').value = d.emp || '';
+                    document.getElementById('info_local').value = d.loc || '';
+                    document.getElementById('info_metodo').value = d.met || '';
+                    document.getElementById('map_date').value = d.mapDate || getToday();
+                    
+                    if(d.pic?.length) d.pic.forEach(r => addRowStd('bodyPicada', 'pic', r)); else addRowStd('bodyPicada', 'pic');
+                    if(d.aq?.length) d.aq.forEach(r => addRowStd('bodyAquisicao', 'aq', r)); else addRowStd('bodyAquisicao', 'aq');
+                    if(d.loops?.length) d.loops.forEach(l => addNewLoopBlock(l.id, l)); else addNewLoopBlock();
+                    
+                    if(d.logo && d.logo.startsWith('data')) { document.getElementById('outL').src = d.logo; document.getElementById('outL').style.display = 'block'; document.getElementById('txtL').style.display = 'none'; }
+                    if(d.map && d.map.startsWith('data')) { document.getElementById('outMap').src = d.map; document.getElementById('outMap').style.display = 'block'; document.getElementById('mapTxt').style.display = 'none'; }
+                    
+                    syncAll();
+                } else {
+                    addRowStd('bodyPicada', 'pic'); addRowStd('bodyAquisicao', 'aq'); addNewLoopBlock();
+                }
+            } catch (e) {
+                document.getElementById('status-cloud').innerText = "Offline / Erro";
+            }
+        });
+    </script>
+
+    <script>
+        // Funções de Interface
+        function processImage(event, imgId, txtId, maxWidth, isLogo) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let w = img.width, h = img.height;
+                    if (w > maxWidth) { h = (h * maxWidth) / w; w = maxWidth; }
+                    canvas.width = w; canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    if(isLogo) { ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, w, h); }
+                    ctx.drawImage(img, 0, 0, w, h);
+                    // Compactação para economizar espaço no Realtime DB
+                    document.getElementById(imgId).src = canvas.toDataURL('image/jpeg', 0.6);
+                    document.getElementById(imgId).style.display = 'block';
+                    document.getElementById(txtId).style.display = 'none';
+                    window.saveAllData();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
         }
 
-        function getTableData(id) {
+        function openMapZoom() {
+            const src = document.getElementById('outMap').src;
+            if(src) { document.getElementById('imgModal').src = src; document.getElementById('mapModal').style.display = 'flex'; }
+        }
+
+        const getToday = () => new Date().toISOString().split('T')[0];
+        let loopCounter = 0;
+
+        function getTableData(id, skip = false) {
             const b = document.getElementById(id); if(!b) return [];
-            return Array.from(b.rows).map(r => Array.from(r.querySelectorAll('input')).map(i => i.value));
+            const rows = Array.from(b.rows); if(skip) rows.shift();
+            return rows.map(r => Array.from(r.querySelectorAll('input')).map(i => i.value));
         }
 
-        // --- GESTÃO DE LINHAS ---
-        function addRowStd(tbodyId, prefix, saved = null) {
-            const tbody = document.getElementById(tbodyId);
-            const row = tbody.insertRow();
-            const isFirst = tbody.rows.length === 1;
-            row.innerHTML = `
-                <td><input type="date" value="${saved?.[0] || ''}" oninput="saveToFirebase()"></td>
-                <td><input type="text" value="${saved?.[1] || ''}" oninput="saveToFirebase()"></td>
-                <td><input type="text" value="${saved?.[2] || ''}" oninput="saveToFirebase()"></td>
-                <td><input type="number" class="${prefix}-de" oninput="syncAll()" value="${saved?.[3] || ''}"></td>
-                <td><input type="number" class="${prefix}-a" oninput="syncAll()" value="${saved?.[4] || ''}"></td>
-                ${isFirst ? `<td class="readonly" rowspan="1"><input type="number" id="${prefix}-plan" value="${saved?.[5] || '4000'}" oninput="syncAll()"></td><td class="readonly" id="${prefix}-exec">0</td><td class="readonly" id="${prefix}-pct">0%</td>` : ''}
-                <td><input type="text" value="${saved?.[isFirst?8:5] || ''}" oninput="saveToFirebase()"></td>`;
-            if (isFirst) updateSpans(tbodyId);
-            if(!saved) syncAll();
-        }
+        function syncAll() { calcStd('pic'); calcStd('aq'); updateMaster(); }
 
-        function addNewLoopBlock(forcedId = null) {
-            const id = forcedId || ++loopCounter;
-            const wrap = document.createElement('div');
-            wrap.id = `group_loop_${id}`;
-            wrap.innerHTML = `
-                <div class="block-header">LOOP L${id} <div class="bar-bg"><div class="bar-fill" id="bar_loop_${id}"></div></div> <span id="pct_txt_loop_${id}">0%</span></div>
-                <table>
-                    <tbody id="tbody_loop_${id}">
-                        <tr style="background:#eee"><th>Data</th><th>Alvo</th><th>L</th><th>N</th><th>S</th><th>E</th><th>W</th><th>Plan</th><th>Exec</th><th>%</th><th>OBS</th></tr>
-                        <tr>
-                            <td><input type="date" oninput="saveToFirebase()"></td>
-                            <td><input type="text" oninput="saveToFirebase()"></td>
-                            <td><input type="text" value="L${id}" readonly></td>
-                            <td><input type="number" class="in-loop-${id}" oninput="sumLoop('${id}')"></td>
-                            <td><input type="number" class="in-loop-${id}" oninput="sumLoop('${id}')"></td>
-                            <td><input type="number" class="in-loop-${id}" oninput="sumLoop('${id}')"></td>
-                            <td><input type="number" class="in-loop-${id}" oninput="sumLoop('${id}')"></td>
-                            <td class="readonly"><input type="number" id="p_loop_${id}" value="4000" oninput="sumLoop('${id}')"></td>
-                            <td class="readonly loop-exec-val-internal" id="ex_loop_${id}">0</td>
-                            <td class="readonly" id="pc_loop_${id}">0%</td>
-                            <td><input type="text" oninput="saveToFirebase()"></td>
-                        </tr>
-                    </tbody>
-                </table>
-                <div class="no-print" style="text-align:right; padding:5px"><button class="btn-mini" onclick="addRowLoop('${id}')">➕ LINHA</button></div>`;
-            document.getElementById('loopsWrapper').appendChild(wrap);
-            if(!forcedId) saveToFirebase();
-        }
-
-        function addRowLoop(id, saved = null) {
-            const tbody = document.getElementById(`tbody_loop_${id}`);
-            const row = tbody.insertRow();
-            row.innerHTML = `<td><input type="date" value="${saved?.[0]||''}" oninput="saveToFirebase()"></td><td><input type="text" value="${saved?.[1]||''}" oninput="saveToFirebase()"></td><td></td><td><input type="number" class="in-loop-${id}" oninput="sumLoop('${id}')" value="${saved?.[3]||''}"></td><td><input type="number" class="in-loop-${id}" oninput="sumLoop('${id}')" value="${saved?.[4]||''}"></td><td><input type="number" class="in-loop-${id}" oninput="sumLoop('${id}')" value="${saved?.[5]||''}"></td><td><input type="number" class="in-loop-${id}" oninput="sumLoop('${id}')" value="${saved?.[6]||''}"></td><td colspan="3"></td><td><input type="text" oninput="saveToFirebase()" value="${saved?.[10]||''}"></td>`;
-            updateLoopSpans(id);
-        }
-
-        // --- CÁLCULOS ---
-        function syncAll() {
-            ['pic', 'aq'].forEach(calcStd);
-            updateMaster();
-            saveToFirebase();
-        }
-
-        function calcStd(p) {
-            let t = 0;
-            const des = document.querySelectorAll(`.${p}-de`), as = document.querySelectorAll(`.${p}-a`);
-            des.forEach((el, i) => t += Math.abs((parseFloat(as[i].value)||0) - (parseFloat(el.value)||0)));
-            const plan = parseFloat(document.getElementById(`${p}-plan`)?.value)||1;
-            const pct = Math.round((t/plan)*100);
-            document.getElementById(`${p}-exec`).innerText = t;
-            document.getElementById(`${p}-pct`).innerText = pct+"%";
-            document.getElementById(`pct_${p}`).innerText = pct+"%";
-            document.getElementById(`bar_${p}`).style.width = Math.min(pct,100)+"%";
-        }
-
-        function sumLoop(id) {
-            let t = 0; document.querySelectorAll(`.in-loop-${id}`).forEach(i => t += (parseFloat(i.value)||0));
-            const p = parseFloat(document.getElementById(`p_loop_${id}`).value)||1;
-            const pct = Math.round((t/p)*100);
-            document.getElementById(`ex_loop_${id}`).innerText = t;
-            document.getElementById(`pc_loop_${id}`).innerText = pct+"%";
-            document.getElementById(`pct_txt_loop_${id}`).innerText = pct+"%";
-            document.getElementById(`bar_loop_${id}`).style.width = Math.min(pct,100)+"%";
-            updateMaster();
-            saveToFirebase();
+        function calcStd(prefix) {
+            let total = 0;
+            const des = document.querySelectorAll(`.${prefix}-de`), as = document.querySelectorAll(`.${prefix}-a`);
+            des.forEach((el, i) => { total += Math.abs((parseFloat(as[i].value) || 0) - (parseFloat(el.value) || 0)); });
+            const plan = parseFloat(document.getElementById(`${prefix}-plan`)?.value) || 0;
+            const pct = plan > 0 ? Math.round((total/plan)*100) : 0;
+            if(document.getElementById(`${prefix}-exec`)) document.getElementById(`${prefix}-exec`).innerText = total;
+            document.getElementById(`pct_${prefix}`).innerText = pct + "%";
+            document.getElementById(`bar_${prefix}`).style.width = Math.min(pct, 100) + "%";
         }
 
         function updateMaster() {
-            document.getElementById('k_p_plan').innerText = document.getElementById('pic-plan')?.value || 0;
-            document.getElementById('k_p_exec').innerText = document.getElementById('pic-exec')?.innerText || 0;
-            document.getElementById('k_a_plan').innerText = document.getElementById('aq-plan')?.value || 0;
-            document.getElementById('k_a_exec').innerText = document.getElementById('aq-exec')?.innerText || 0;
-            let lp=0, le=0;
-            document.querySelectorAll('[id^="p_loop_"]').forEach(i => lp += parseFloat(i.value)||0);
-            document.querySelectorAll('.loop-exec-val-internal').forEach(i => le += parseFloat(i.innerText)||0);
-            document.getElementById('k_l_plan').innerText = lp;
-            document.getElementById('k_l_exec').innerText = le;
+            const pp = parseFloat(document.getElementById('pic-plan')?.value) || 0, pe = parseFloat(document.getElementById('pic-exec')?.innerText) || 0;
+            document.getElementById('k_p_plan').innerText = pp; document.getElementById('k_p_exec').innerText = pe; document.getElementById('k_p_pct').innerText = (pp > 0 ? Math.round((pe/pp)*100) : 0) + "%";
+            const ap = parseFloat(document.getElementById('aq-plan')?.value) || 0, ae = parseFloat(document.getElementById('aq-exec')?.innerText) || 0;
+            document.getElementById('k_a_plan').innerText = ap; document.getElementById('k_a_exec').innerText = ae; document.getElementById('k_a_pct').innerText = (ap > 0 ? Math.round((ae/ap)*100) : 0) + "%";
+            let lp = 0, le = 0;
+            document.querySelectorAll('[id^="p_loop_"]').forEach(el => lp += parseFloat(el.value) || 0);
+            document.querySelectorAll('.loop-exec-val-internal').forEach(el => le += parseFloat(el.innerText) || 0);
+            document.getElementById('k_l_plan').innerText = lp; document.getElementById('k_l_exec').innerText = le; document.getElementById('k_l_pct').innerText = (lp > 0 ? Math.round((le/lp)*100) : 0) + "%";
         }
 
-        function updateSpans(id) { 
-            const rows = document.getElementById(id).rows;
-            if(rows.length>0) Array.from(rows[0].querySelectorAll('.readonly')).forEach(c => c.rowSpan = rows.length);
-        }
-        function updateLoopSpans(id) {
-            const rows = document.getElementById(`tbody_loop_${id}`).rows;
-            if(rows.length>1) Array.from(rows[1].querySelectorAll('.readonly')).forEach(c => c.rowSpan = rows.length - 1);
-        }
-
-        // --- IMAGENS ---
-        function loadFile(e, imgId, txtId) {
-            const reader = new FileReader();
-            reader.onload = () => {
-                const img = document.getElementById(imgId);
-                img.src = reader.result;
-                img.style.display = 'block';
-                document.getElementById(txtId).style.display = 'none';
-                saveToFirebase();
-            };
-            reader.readAsDataURL(e.target.files[0]);
+        function addRowStd(tbodyId, prefix, saved = null) {
+            const tbody = document.getElementById(tbodyId);
+            const row = tbody.insertRow();
+            row.innerHTML = `
+                <td class="no-print col-del"><button class="btn-mini" style="background:#ef4444" onclick="this.parentNode.parentNode.remove(); syncAll(); window.saveAllData();">×</button></td>
+                <td><input type="date" value="${saved?.[0] || getToday()}" oninput="window.saveAllData()"></td>
+                <td><input type="text" value="${saved?.[1] || ''}" oninput="window.saveAllData()"></td>
+                <td><input type="text" value="${saved?.[2] || ''}" oninput="window.saveAllData()"></td>
+                <td><input type="number" class="${prefix}-de" oninput="syncAll(); window.saveAllData();" value="${saved?.[3] || ''}"></td>
+                <td><input type="number" class="${prefix}-a" oninput="syncAll(); window.saveAllData();" value="${saved?.[4] || ''}"></td>
+                <td><input type="text" value="${saved?.[5] || ''}" oninput="window.saveAllData()"></td>
+                ${tbody.rows.length === 1 ? `
+                    <td class="readonly" rowspan="1"><input type="number" id="${prefix}-plan" value="${saved?.[6] || '4000'}" oninput="syncAll(); window.saveAllData();"></td>
+                    <td class="readonly" id="${prefix}-exec" rowspan="1">0</td>
+                    <td class="readonly" id="${prefix}-pct" rowspan="1">0%</td>
+                ` : ''}
+            `;
+            updateSpans(tbodyId); syncAll();
         }
 
-        // --- LOAD INICIAL ---
-        window.onload = () => {
-            db.ref('producao_atual').once('value').then(s => {
-                const d = s.val();
-                if(!d) { addRowStd('bodyPicada','pic'); addRowStd('bodyAquisicao','aq'); return; }
-                
-                if(d.pic) d.pic.forEach(r => addRowStd('bodyPicada','pic', r));
-                if(d.aq) d.aq.forEach(r => addRowStd('bodyAquisicao','aq', r));
-                
-                if(d.loops) {
-                    d.loops.forEach(l => {
-                        addNewLoopBlock(l.id);
-                        document.getElementById(`p_loop_${l.id}`).value = l.p;
-                        const tbody = document.getElementById(`tbody_loop_${l.id}`);
-                        // Preenche a primeira linha já existente
-                        const firstRowInputs = tbody.rows[1].querySelectorAll('input');
-                        l.rows[0].forEach((val, idx) => { if(firstRowInputs[idx]) firstRowInputs[idx].value = val; });
-                        // Adiciona as demais
-                        l.rows.slice(1).forEach(rd => addRowLoop(l.id, rd));
-                        sumLoop(l.id);
-                    });
-                    loopCounter = Math.max(...d.loops.map(l => parseInt(l.id)), 0);
-                }
+        function addNewLoopBlock(forcedId = null, savedData = null) {
+            const idV = forcedId || ++loopCounter;
+            const id = `loop_${idV}`;
+            const wrap = document.createElement('div');
+            wrap.id = `group_${id}`; wrap.className = 'loop-block-main';
+            wrap.innerHTML = `
+                <div class="block-header header-loop"><span>PROG. LOOP</span><div class="bar-bg"><div class="bar-fill" id="bar_${id}"></div></div><span id="pc_txt_${id}">0%</span></div>
+                <table><tbody id="tbody_${id}"><tr><th class="no-print col-del"></th><th>Data</th><th>Alvo</th><th>ID Loop</th><th>N</th><th>S</th><th>E</th><th>W</th><th>Obs</th><th>Plan.</th><th>Exec.</th><th>%</th></tr></tbody></table>
+                <div class="loop-controls no-print" style="margin:5px 0 10px 0; text-align:right">
+                    <button class="btn-mini" style="background:var(--gsm-mid)" onclick="addRowLoop('${id}')">➕ LINHA</button> 
+                    <button class="btn-mini" style="background:#ef4444" onclick="if(confirm('Remover bloco?')) { this.parentNode.parentNode.remove(); syncAll(); window.saveAllData(); }">🗑️ BLOCO</button>
+                </div>`;
+            document.getElementById('loopsWrapper').appendChild(wrap);
+            if(savedData) savedData.rows.forEach((r, idx) => addRowLoop(id, r, idx === 0, savedData.p));
+            else addRowLoop(id, null, true);
+        }
 
-                if(d.logo) { 
-                    document.getElementById('outL').src = d.logo; 
-                    document.getElementById('outL').style.display = 'block';
-                    document.getElementById('txtL').style.display = 'none';
-                }
-                if(d.map) { 
-                    document.getElementById('outMap').src = d.map; 
-                    document.getElementById('outMap').style.display = 'block';
-                    document.getElementById('mapTxt').style.display = 'none';
-                }
-                document.getElementById('mapDate').value = d.mapDate || "";
-                document.getElementById('mapDesc').value = d.mapDesc || "";
-                syncAll();
-                document.getElementById('db-status').innerText = "✅ Conectado";
-            });
-        };
+        function addRowLoop(id, saved = null, isFirst = false, planVal = '4000') {
+            const tbody = document.getElementById(`tbody_${id}`);
+            const row = tbody.insertRow();
+            row.innerHTML = `
+                <td class="no-print col-del"><button class="btn-mini" style="background:#ef4444" onclick="this.parentNode.parentNode.remove(); sumLoop('${id}'); window.saveAllData();">×</button></td>
+                <td><input type="date" value="${saved?.[1] || getToday()}" oninput="window.saveAllData()"></td>
+                <td><input type="text" value="${saved?.[2] || ''}" oninput="window.saveAllData()"></td>
+                <td class="readonly"><input type="text" value="${saved?.[3] || 'L'+id.split('_')[1]}" oninput="window.saveAllData()"></td>
+                <td><input type="number" class="in-${id}" oninput="sumLoop('${id}')" value="${saved?.[4] || ''}"></td>
+                <td><input type="number" class="in-${id}" oninput="sumLoop('${id}')" value="${saved?.[5] || ''}"></td>
+                <td><input type="number" class="in-${id}" oninput="sumLoop('${id}')" value="${saved?.[6] || ''}"></td>
+                <td><input type="number" class="in-${id}" oninput="sumLoop('${id}')" value="${saved?.[7] || ''}"></td>
+                <td><input type="text" value="${saved?.[8] || ''}" oninput="window.saveAllData()"></td>
+                ${isFirst ? `
+                    <td class="readonly" rowspan="1"><input type="number" id="p_${id}" value="${planVal}" oninput="sumLoop('${id}')"></td>
+                    <td class="readonly loop-exec-val-internal" id="ex_${id}" rowspan="1">0</td>
+                    <td class="readonly" id="pc_${id}" rowspan="1">0%</td>
+                ` : ''}
+            `;
+            updateLoopSpans(id); sumLoop(id);
+        }
 
-        function clearAllData() { if(confirm("Limpar tudo?")) db.ref('producao_atual').remove().then(() => location.reload()); }
+        function sumLoop(id) {
+            let t = 0; document.querySelectorAll(`.in-${id}`).forEach(i => t += (parseFloat(i.value) || 0));
+            const p = parseFloat(document.getElementById(`p_${id}`).value) || 0, pct = p > 0 ? Math.round((t/p)*100) : 0;
+            if(document.getElementById(`ex_${id}`)) document.getElementById(`ex_${id}`).innerText = t;
+            if(document.getElementById(`pc_${id}`)) document.getElementById(`pc_${id}`).innerText = pct + "%";
+            document.getElementById(`pc_txt_${id}`).innerText = pct + "%";
+            document.getElementById(`bar_${id}`).style.width = Math.min(pct, 100) + "%";
+            window.saveAllData();
+        }
+
+        function updateSpans(id) { const b = document.getElementById(id); if (b?.rows.length > 0) Array.from(b.rows[0].querySelectorAll('.readonly')).forEach(c => c.rowSpan = b.rows.length); }
+        function updateLoopSpans(id) { const b = document.getElementById(`tbody_${id}`); if (b?.rows.length > 1) Array.from(b.rows[1].querySelectorAll('.readonly')).forEach(c => c.rowSpan = b.rows.length - 1); }
     </script>
 </body>
 </html>
