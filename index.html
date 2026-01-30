@@ -14,6 +14,7 @@
             --gsm-text-bg: #f8fafc;
             --success: #10B981; 
             --border: #cbd5e1;
+            --error: #ef4444;
         }
 
         * { box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
@@ -68,10 +69,9 @@
 
         .btn { width: 100%; padding: 12px; border: none; color: white; font-weight: 700; cursor: pointer; margin-bottom: 10px; font-size: 8pt; border-radius: 6px; text-transform: uppercase; }
         .btn-mini { padding: 4px 10px; font-size: 7pt; background: var(--gsm-deep); color: white; border: none; cursor: pointer; border-radius: 4px; font-weight: 800; }
-        .no-print { display: block; }
-        #status-cloud { font-size: 7pt; margin-top: 10px; text-align: center; color: #10B981; font-weight: 600; }
-        #mapModal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); justify-content: center; align-items: center; }
-        #mapModal img { max-width: 95%; max-height: 95%; }
+        
+        #status-cloud { font-size: 8pt; margin-top: 10px; text-align: center; padding: 10px; border-radius: 4px; background: rgba(0,0,0,0.2); }
+        #debug-log { font-size: 7pt; color: #fda4af; margin-top: 10px; word-break: break-all; }
 
         @media print {
             .sidebar, .no-print, .col-del, #mapModal, .loop-controls { display: none !important; }
@@ -81,17 +81,21 @@
     </style>
 </head>
 <body>
-    <div id="mapModal" onclick="this.style.display='none'"><img id="imgModal"></div>
+    <div id="mapModal" style="display:none; position:fixed; z-index:9999; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); justify-content:center; align-items:center;" onclick="this.style.display='none'">
+        <img id="imgModal" style="max-width:95%; max-height:95%;">
+    </div>
     
     <div class="sidebar no-print">
-        <h2>GSM CLOUD (FS)</h2>
+        <h2>GSM CLOUD v2</h2>
         <button class="btn" style="background:var(--gsm-deep)" onclick="addRowStd('bodyPicada', 'pic')">➕ LINHA PICADA</button>
         <button class="btn" style="background:var(--gsm-mid)" onclick="addRowStd('bodyAquisicao', 'aq')">➕ LINHA AQUISIÇÃO</button>
         <button class="btn" style="background:var(--gsm-cyan)" onclick="addNewLoopBlock()">💠 NOVO BLOCO LOOP</button>
         <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:20px 0;">
         
-        <button class="btn" style="background:#0ea5e9" onclick="saveToFirestore()">☁️ SALVAR MANUAL</button>
-        <div id="status-cloud">Aguardando login...</div>
+        <button class="btn" style="background:#0ea5e9" onclick="saveToFirestore()">☁️ SALVAR AGORA</button>
+        
+        <div id="status-cloud">Iniciando...</div>
+        <div id="debug-log"></div>
 
         <button class="btn" style="background:#ef4444; margin-top:20px" onclick="clearData()">🗑️ RESETAR TUDO</button>
         <button class="btn" style="background:#475569" onclick="window.print()">🖨️ GERAR PDF</button>
@@ -101,7 +105,7 @@
         <div class="container">
             <header>
                 <div class="logo-area" onclick="document.getElementById('inLog').click()">
-                    <input type="file" id="inLog" style="display:none" accept="image/*" onchange="processImage(event, 'outL', 'txtL', 400, true)">
+                    <input type="file" id="inLog" style="display:none" accept="image/*" onchange="processImage(event, 'outL', 'txtL', 300, true)">
                     <img id="outL" style="display:none">
                     <div id="txtL"><small>LOGO</small></div>
                 </div>
@@ -148,7 +152,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, deleteDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         const firebaseConfig = {
@@ -164,109 +168,95 @@
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        let timeoutAuto;
+        const statusEl = document.getElementById('status-cloud');
+        const debugEl = document.getElementById('debug-log');
+
+        function logDebug(msg) {
+            console.log(msg);
+            debugEl.innerText = msg.substring(0, 100);
+        }
 
         window.saveToFirestore = async function() {
-            const statusEl = document.getElementById('status-cloud');
-            statusEl.innerText = "Salvando...";
+            statusEl.innerText = "⏳ Gravando...";
             statusEl.style.color = "#f59e0b";
 
-            // Captura de dados
-            const data = {
+            const payload = {
                 metadata: {
-                    cliente: document.getElementById('info_empresa').value || "",
-                    projeto: document.getElementById('info_local').value || "",
-                    metodo: document.getElementById('info_metodo').value || "",
-                    dataMapa: document.getElementById('map_date').value || ""
+                    cliente: document.getElementById('info_empresa').value,
+                    projeto: document.getElementById('info_local').value,
+                    metodo: document.getElementById('info_metodo').value,
+                    dataMapa: document.getElementById('map_date').value
                 },
                 picada: getTableData('bodyPicada'),
                 aquisicao: getTableData('bodyAquisicao'),
                 loops: Array.from(document.querySelectorAll('.loop-block-main')).map(el => {
                     const id = el.id.replace('group_', '');
-                    return { 
-                        id, 
-                        p: document.getElementById(`p_${id}`)?.value || '4000', 
-                        rows: getTableData(`tbody_${id}`, true) 
-                    };
+                    return { id, p: document.getElementById(`p_${id}`)?.value || '4000', rows: getTableData(`tbody_${id}`, true) };
                 }),
-                logo: document.getElementById('outL').src.length > 50 ? document.getElementById('outL').src : "",
-                mapa: document.getElementById('outMap').src.length > 50 ? document.getElementById('outMap').src : "",
-                ultimaAtualizacao: new Date().toISOString()
+                logo: document.getElementById('outL').src.startsWith('data') ? document.getElementById('outL').src : "",
+                mapa: document.getElementById('outMap').src.startsWith('data') ? document.getElementById('outMap').src : "",
+                ts: Date.now()
             };
 
             try {
-                // Tenta salvar no documento "atual" dentro da coleção "producao"
-                await setDoc(doc(db, "producao", "atual"), data);
-                statusEl.innerText = "☁️ Firestore Sincronizado";
+                // Tenta salvar no documento fixo 'atual'
+                await setDoc(doc(db, "producao", "atual"), payload);
+                statusEl.innerText = "✅ Sincronizado";
                 statusEl.style.color = "#10B981";
-                updateMaster();
-            } catch (error) {
-                console.error("Erro detalhado do Firestore:", error);
-                statusEl.innerText = "❌ Erro ao Salvar (Ver Console)";
+                debugEl.innerText = "";
+            } catch (e) {
+                logDebug("ERRO: " + e.message);
+                statusEl.innerText = "❌ Falha ao salvar";
                 statusEl.style.color = "#ef4444";
-                if(error.code === 'permission-denied') alert("Erro: Permissão negada. Verifique as 'Rules' no console do Firebase.");
             }
         };
 
         window.autoSave = () => {
-            clearTimeout(timeoutAuto);
-            timeoutAuto = setTimeout(window.saveToFirestore, 2000);
+            clearTimeout(window.saveTimeout);
+            window.saveTimeout = setTimeout(window.saveToFirestore, 2500);
         };
 
         window.clearData = async () => {
-            if(confirm("Isso apagará os dados no Firestore. Continuar?")) {
-                try {
-                    await deleteDoc(doc(db, "producao", "atual"));
-                    location.reload();
-                } catch(e) { alert("Erro ao apagar"); }
+            if(confirm("Deseja apagar tudo permanentemente?")) {
+                await deleteDoc(doc(db, "producao", "atual"));
+                location.reload();
             }
         };
 
-        // Carregamento inicial
-        window.addEventListener('load', async () => {
+        // Início
+        (async () => {
             try {
-                const user = await signInAnonymously(auth);
-                console.log("Autenticado anonimamente:", user.user.uid);
+                await signInAnonymously(auth);
+                logDebug("Autenticado");
                 
                 const snap = await getDoc(doc(db, "producao", "atual"));
-
                 if (snap.exists()) {
                     const d = snap.data();
-                    document.getElementById('info_empresa').value = d.metadata.cliente || "";
-                    document.getElementById('info_local').value = d.metadata.projeto || "";
-                    document.getElementById('info_metodo').value = d.metadata.metodo || "";
-                    document.getElementById('map_date').value = d.metadata.dataMapa || getToday();
+                    document.getElementById('info_empresa').value = d.metadata?.cliente || "";
+                    document.getElementById('info_local').value = d.metadata?.projeto || "";
+                    document.getElementById('info_metodo').value = d.metadata?.metodo || "";
+                    document.getElementById('map_date').value = d.metadata?.dataMapa || getToday();
                     
                     if(d.picada?.length) d.picada.forEach(r => addRowStd('bodyPicada', 'pic', r)); else addRowStd('bodyPicada', 'pic');
                     if(d.aquisicao?.length) d.aquisicao.forEach(r => addRowStd('bodyAquisicao', 'aq', r)); else addRowStd('bodyAquisicao', 'aq');
-                    
-                    if(d.loops?.length) {
-                        d.loops.forEach(l => addNewLoopBlock(l.id, l));
-                    } else {
-                        addNewLoopBlock();
-                    }
+                    if(d.loops?.length) d.loops.forEach(l => addNewLoopBlock(l.id, l)); else addNewLoopBlock();
                     
                     if(d.logo) { document.getElementById('outL').src = d.logo; document.getElementById('outL').style.display = 'block'; document.getElementById('txtL').style.display = 'none'; }
                     if(d.mapa) { document.getElementById('outMap').src = d.mapa; document.getElementById('outMap').style.display = 'block'; document.getElementById('mapTxt').style.display = 'none'; }
                     
                     syncAll();
-                    document.getElementById('status-cloud').innerText = "☁️ Firestore Conectado";
                 } else {
-                    // Inicialização padrão se o banco estiver vazio
-                    addRowStd('bodyPicada', 'pic'); 
-                    addRowStd('bodyAquisicao', 'aq'); 
-                    addNewLoopBlock();
-                    document.getElementById('status-cloud').innerText = "☁️ Firestore Vazio";
+                    addRowStd('bodyPicada', 'pic'); addRowStd('bodyAquisicao', 'aq'); addNewLoopBlock();
                 }
+                statusEl.innerText = "☁️ Conectado";
             } catch (e) {
-                console.error("Erro no load:", e);
-                document.getElementById('status-cloud').innerText = "Erro de Conexão";
+                logDebug("Erro Inicial: " + e.message);
             }
-        });
+        })();
     </script>
 
     <script>
-        // FUNÇÕES DE UI E LÓGICA DE TABELAS
+        // Lógica de Interface
         function processImage(event, imgId, txtId, maxWidth, isLogo) {
             const file = event.target.files[0];
             if (!file) return;
@@ -281,7 +271,6 @@
                     const ctx = canvas.getContext('2d');
                     if(isLogo) { ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, w, h); }
                     ctx.drawImage(img, 0, 0, w, h);
-                    // Qualidade 0.4 para economizar espaço no Firestore
                     document.getElementById(imgId).src = canvas.toDataURL('image/jpeg', 0.4);
                     document.getElementById(imgId).style.display = 'block';
                     document.getElementById(txtId).style.display = 'none';
@@ -331,14 +320,14 @@
             const row = tbody.insertRow();
             row.innerHTML = `
                 <td class="no-print col-del"><button class="btn-mini" style="background:#ef4444" onclick="this.parentNode.parentNode.remove(); syncAll(); window.autoSave();">×</button></td>
-                <td><input type="date" value="${saved?.[1] || getToday()}" oninput="window.autoSave()"></td>
+                <td><input type="date" value="${saved?.[0] || getToday()}" oninput="window.autoSave()"></td>
+                <td><input type="text" value="${saved?.[1] || ''}" oninput="window.autoSave()"></td>
                 <td><input type="text" value="${saved?.[2] || ''}" oninput="window.autoSave()"></td>
-                <td><input type="text" value="${saved?.[3] || ''}" oninput="window.autoSave()"></td>
-                <td><input type="number" class="${prefix}-de" oninput="syncAll(); window.autoSave();" value="${saved?.[4] || ''}"></td>
-                <td><input type="number" class="${prefix}-a" oninput="syncAll(); window.autoSave();" value="${saved?.[5] || ''}"></td>
-                <td><input type="text" value="${saved?.[6] || ''}" oninput="window.autoSave()"></td>
+                <td><input type="number" class="${prefix}-de" oninput="syncAll(); window.autoSave();" value="${saved?.[3] || ''}"></td>
+                <td><input type="number" class="${prefix}-a" oninput="syncAll(); window.autoSave();" value="${saved?.[4] || ''}"></td>
+                <td><input type="text" value="${saved?.[5] || ''}" oninput="window.autoSave()"></td>
                 ${tbody.rows.length === 1 ? `
-                    <td class="readonly" rowspan="1"><input type="number" id="${prefix}-plan" value="${saved?.[7] || '4000'}" oninput="syncAll(); window.autoSave();"></td>
+                    <td class="readonly" rowspan="1"><input type="number" id="${prefix}-plan" value="${saved?.[6] || '4000'}" oninput="syncAll(); window.autoSave();"></td>
                     <td class="readonly" id="${prefix}-exec" rowspan="1">0</td>
                     <td class="readonly" id="${prefix}-pct" rowspan="1">0%</td>
                 ` : ''}
@@ -359,11 +348,8 @@
                     <button class="btn-mini" style="background:#ef4444" onclick="if(confirm('Remover bloco?')) { this.parentNode.parentNode.remove(); syncAll(); window.autoSave(); }">🗑️ BLOCO</button>
                 </div>`;
             document.getElementById('loopsWrapper').appendChild(wrap);
-            if(savedData && savedData.rows) {
-                savedData.rows.forEach((r, idx) => addRowLoop(id, r, idx === 0, savedData.p));
-            } else {
-                addRowLoop(id, null, true);
-            }
+            if(savedData) savedData.rows.forEach((r, idx) => addRowLoop(id, r, idx === 0, savedData.p));
+            else addRowLoop(id, null, true);
         }
 
         function addRowLoop(id, saved = null, isFirst = false, planVal = '4000') {
@@ -390,13 +376,12 @@
 
         function sumLoop(id) {
             let t = 0; document.querySelectorAll(`.in-${id}`).forEach(i => t += (parseFloat(i.value) || 0));
-            const pVal = document.getElementById(`p_${id}`);
-            if(!pVal) return;
-            const p = parseFloat(pVal.value) || 0, pct = p > 0 ? Math.round((t/p)*100) : 0;
+            const p = parseFloat(document.getElementById(`p_${id}`).value) || 0, pct = p > 0 ? Math.round((t/p)*100) : 0;
             if(document.getElementById(`ex_${id}`)) document.getElementById(`ex_${id}`).innerText = t;
             if(document.getElementById(`pc_${id}`)) document.getElementById(`pc_${id}`).innerText = pct + "%";
-            if(document.getElementById(`pc_txt_${id}`)) document.getElementById(`pc_txt_${id}`).innerText = pct + "%";
-            if(document.getElementById(`bar_${id}`)) document.getElementById(`bar_${id}`).style.width = Math.min(pct, 100) + "%";
+            document.getElementById(`pc_txt_${id}`).innerText = pct + "%";
+            document.getElementById(`bar_${id}`).style.width = Math.min(pct, 100) + "%";
+            window.autoSave();
         }
 
         function updateSpans(id) { const b = document.getElementById(id); if (b?.rows.length > 0) Array.from(b.rows[0].querySelectorAll('.readonly')).forEach(c => c.rowSpan = b.rows.length); }
